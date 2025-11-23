@@ -10,11 +10,11 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   const [examTimes, setExamTimes] = useState([]);
-  const [selectedTime, setSelectedTime] = useState('전체'); // 기본값 '전체'
+  const [selectedTime, setSelectedTime] = useState('전체'); 
 
   const [myScore, setMyScore] = useState('');
 
-  // 점수 입력 가능 여부 체크 (전체가 아니고, 특정 시간이 선택되었을 때만 true)
+  // 점수 입력 가능 여부
   const isScoreEnabled = selectedTime !== '전체' && selectedTime !== null;
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function Home() {
     setLoading(true);
     setSelectedUni(uniName);
     setMyScore(''); 
-    setSelectedTime('전체'); // 학교 바뀌면 '전체'로 초기화 (입력 잠금 상태)
+    setSelectedTime('전체');
     
     const { data } = await supabase
       .from('exam_results')
@@ -89,22 +89,23 @@ export default function Home() {
                   <div 
                     key={uni}
                     onClick={() => handleSelectUni(uni)}
-                    className="bg-white rounded-[20px] p-4 cursor-pointer 
+                    className="bg-white rounded-[24px] p-6 cursor-pointer 
                                shadow-sm active:scale-95 transition-all duration-200 
-                               flex flex-col items-center justify-center h-[140px] border border-transparent hover:border-blue-100"
+                               flex flex-col items-center justify-center h-[180px] border border-transparent hover:border-blue-100"
                   >
-                    <div className="w-[50px] h-[50px] mb-3 flex items-center justify-center">
+                    {/* 1. 로고 박스 (크기 대폭 확대: 50px -> 80px) */}
+                    <div className="w-[80px] h-[80px] mb-4 flex items-center justify-center">
                       <img 
                         src={`/logos/${uni}.png`} 
                         alt={uni}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain drop-shadow-sm"
                         onError={(e) => {
                           e.target.onerror = null; 
                           e.target.src = "https://cdn-icons-png.flaticon.com/512/807/807262.png"; 
                         }}
                       />
                     </div>
-                    <span className="text-[16px] font-bold text-[#333D4B] text-center leading-tight">
+                    <span className="text-[18px] font-bold text-[#333D4B] text-center leading-tight">
                       {uni}
                     </span>
                   </div>
@@ -118,11 +119,11 @@ export default function Home() {
         {selectedUni && (
           <div className="animate-fade-in-up">
             
-            {/* 1. 상단 컨트롤 패널 */}
+            {/* 1. 상단 컨트롤 패널 (순서 변경됨) */}
             <div className="sticky top-0 z-20 bg-[#F2F4F6]/95 backdrop-blur-md pb-4 pt-2 -mx-5 px-5 mb-2 space-y-4">
               
-              {/* 1-1. 학교 정보 & 점수 입력 (조건부 스타일 적용) */}
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 bg-white p-4 rounded-[24px] shadow-sm border border-blue-50">
+              {/* 1-1. 학교 정보 (뒤로가기 + 로고 + 이름) */}
+              <div className="flex items-center justify-between bg-white p-4 rounded-[24px] shadow-sm border border-blue-50">
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => { setSelectedUni(null); setResults([]); }}
@@ -138,42 +139,17 @@ export default function Home() {
                      <h1 className="text-[18px] font-bold text-[#191F28] whitespace-nowrap">{selectedUni}</h1>
                   </div>
                 </div>
-
-                {/* 점수 입력창 (활성/비활성 로직 적용) */}
-                <div 
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-[16px] border transition-colors w-full md:w-auto justify-end
-                    ${isScoreEnabled 
-                      ? 'bg-[#F9FAFB] border-gray-200' // 활성 상태 (흰색 배경)
-                      : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60' // 비활성 상태 (회색 배경 + 투명도)
-                    }`}
-                >
-                  <span className={`text-[14px] font-bold whitespace-nowrap ${isScoreEnabled ? 'text-[#333D4B]' : 'text-gray-400'}`}>
-                    {isScoreEnabled ? '✍️ 내 점수:' : '🔒 시간선택필요'}
-                  </span>
-                  <input 
-                    type="number" 
-                    value={myScore}
-                    onChange={handleScoreChange}
-                    disabled={!isScoreEnabled} // 여기서 입력 막음!
-                    placeholder={isScoreEnabled ? "0" : "-"}
-                    className={`bg-transparent text-[18px] font-bold w-[50px] text-center focus:outline-none
-                      ${isScoreEnabled ? 'text-[#3182F6] placeholder-gray-300' : 'text-gray-400 cursor-not-allowed'}`}
-                  />
-                  {isScoreEnabled && <span className="text-[13px] font-medium text-[#8B95A1]">점</span>}
-                </div>
+                <span className="text-[13px] text-[#8B95A1]">총 {results.length}개</span>
               </div>
 
-              {/* 1-2. 시험 시간 선택 탭 (안내 문구 추가) */}
+              {/* 1-2. 시험 시간 선택 탭 */}
               <div>
                 <div className="flex justify-between items-end mb-2 ml-1 px-1">
-                  <h3 className="text-[13px] font-bold text-[#6B7684]">시험 시간을 선택하세요</h3>
-                  {!isScoreEnabled && <span className="text-[11px] text-[#F04452] animate-pulse">👈 시간을 선택해야 입력 가능해요!</span>}
+                  <h3 className="text-[13px] font-bold text-[#6B7684]">1. 시험 시간을 선택하세요</h3>
                 </div>
-                
-                {/* 탭 컨테이너 */}
                 <div className="bg-[#E5E8EB] p-1 rounded-[16px] flex gap-1 overflow-x-auto scrollbar-hide">
                   <button
-                    onClick={() => { setSelectedTime('전체'); setMyScore(''); }} // 전체 선택 시 점수 초기화
+                    onClick={() => { setSelectedTime('전체'); setMyScore(''); }}
                     className={`flex-1 min-w-[70px] py-2.5 rounded-[12px] text-[14px] font-bold transition-all duration-200 text-center whitespace-nowrap
                       ${selectedTime === '전체' 
                         ? 'bg-white text-[#333D4B] shadow-sm' 
@@ -182,14 +158,13 @@ export default function Home() {
                   >
                     전체
                   </button>
-
                   {examTimes.map((time) => (
                     <button
                       key={time}
                       onClick={() => setSelectedTime(time)}
                       className={`flex-1 min-w-[70px] py-2.5 rounded-[12px] text-[14px] font-bold transition-all duration-200 text-center whitespace-nowrap
                         ${selectedTime === time 
-                          ? 'bg-white text-[#3182F6] shadow-sm ring-2 ring-blue-100' // 선택됨 강조
+                          ? 'bg-white text-[#3182F6] shadow-sm ring-2 ring-blue-100' 
                           : 'text-[#8B95A1] hover:text-[#6B7684]'
                         }`}
                     >
@@ -199,10 +174,44 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* 1-3. 점수 입력창 (맨 아래로 이동) */}
+              <div>
+                <div className="flex justify-between items-end mb-2 ml-1 px-1">
+                  <h3 className={`text-[13px] font-bold transition-colors ${isScoreEnabled ? 'text-[#3182F6]' : 'text-[#6B7684]'}`}>
+                    2. 내 점수를 입력하세요
+                  </h3>
+                  {!isScoreEnabled && <span className="text-[11px] text-[#F04452] animate-pulse">시간 선택 필요!</span>}
+                </div>
+                
+                <div 
+                  className={`flex items-center justify-between px-5 py-3 rounded-[20px] border transition-all duration-300
+                    ${isScoreEnabled 
+                      ? 'bg-white border-[#3182F6] shadow-md ring-4 ring-blue-50' // 활성: 파란 테두리 + 그림자
+                      : 'bg-gray-100 border-gray-200 opacity-60' // 비활성
+                    }`}
+                >
+                  <span className={`text-[15px] font-bold ${isScoreEnabled ? 'text-[#333D4B]' : 'text-gray-400'}`}>
+                    ✍️ 예상 점수
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      value={myScore}
+                      onChange={handleScoreChange}
+                      disabled={!isScoreEnabled}
+                      placeholder="0"
+                      className={`bg-transparent text-[24px] font-bold w-[80px] text-right focus:outline-none
+                        ${isScoreEnabled ? 'text-[#3182F6] placeholder-gray-300' : 'text-gray-400'}`}
+                    />
+                    <span className={`text-[14px] font-medium mt-1 ${isScoreEnabled ? 'text-[#333D4B]' : 'text-gray-400'}`}>점</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* 2. 데이터 표 */}
-            <div className="bg-white rounded-[24px] shadow-sm overflow-hidden border border-gray-100">
+            <div className="bg-white rounded-[24px] shadow-sm overflow-hidden border border-gray-100 mt-4">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
@@ -242,7 +251,7 @@ export default function Home() {
                         return (
                           <tr key={item.id} className="border-b border-gray-50 last:border-0 hover:bg-[#F2F4F6] transition-colors group">
                             <td className="py-4 pl-6 text-center">
-                              <span className={`px-2 py-1 rounded-[6px] text-[12px] font-bold ${selectedTime === item.exam_time ? 'bg-[#E8F3FF] text-[#3182F6]' : 'bg-gray-100 text-gray-500'}`}>
+                              <span className="bg-[#E8F3FF] text-[#3182F6] px-2 py-1 rounded-[6px] text-[12px] font-bold">
                                 {item.exam_time || '-'}
                               </span>
                             </td>
@@ -255,13 +264,9 @@ export default function Home() {
                             <td className="py-4 px-2 text-center font-bold text-[#F04452]">{item.cut_score || '-'}</td>
 
                             <td className="py-4 pr-6 align-middle">
-                              {!isScoreEnabled ? (
-                                <div className="text-center text-[11px] text-[#B0B8C1] bg-gray-50 py-1.5 px-3 rounded-full border border-gray-100">
-                                  시간 선택 필요
-                                </div>
-                              ) : myScore === '' ? (
-                                <div className="text-center text-[11px] text-[#3182F6] bg-blue-50 py-1.5 px-3 rounded-full border border-blue-100 animate-pulse">
-                                  점수를 입력하세요
+                              {myScore === '' ? (
+                                <div className="text-center text-[12px] text-[#B0B8C1] bg-gray-50 py-1.5 px-3 rounded-full border border-gray-100">
+                                  점수 확인
                                 </div>
                               ) : (
                                 <div className="flex flex-col items-end gap-1">
