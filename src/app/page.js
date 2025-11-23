@@ -121,7 +121,7 @@ function HomeContent() {
                                shadow-sm active:scale-95 transition-all duration-200 
                                flex flex-col items-center justify-center h-[180px] border border-transparent hover:border-blue-100"
                   >
-                    <div className="w-[80px] h-[80px] mb-4 flex items-center justify-center">
+                    <div className="w-[300px] h-[300px] mb-4 flex items-center justify-center">
                       <img 
                         src={`/logos/${uni}.png`} 
                         alt={uni}
