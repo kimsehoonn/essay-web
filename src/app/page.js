@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const router = useRouter();
-  
   const [universities, setUniversities] = useState([]);
   const [selectedUni, setSelectedUni] = useState(null);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. 학교 목록 가져오기
+  // 추가된 상태: 시험 시간 목록 & 선택된 시간
+  const [examTimes, setExamTimes] = useState([]);
+  const [selectedTime, setSelectedTime] = useState(null);
+
+  // 전역 내 점수
+  const [myScore, setMyScore] = useState('');
+
   useEffect(() => {
     const fetchUniversities = async () => {
       const { data, error } = await supabase.from('exam_results').select('university');
@@ -25,79 +28,41 @@ export default function Home() {
     fetchUniversities();
   }, []);
 
-  // 2. 학교 선택 핸들러
   const handleSelectUni = async (uniName) => {
     setLoading(true);
     setSelectedUni(uniName);
+    setMyScore(''); 
+    setSelectedTime(null);
+    
     const { data } = await supabase
       .from('exam_results')
       .select('*')
       .eq('university', uniName)
       .order('year', { ascending: false })
       .order('exam_time', { ascending: true });
-    setResults(data || []);
+    
+    if (data) {
+      setResults(data);
+      const times = [...new Set(data.map(item => item.exam_time).filter(t => t))];
+      setExamTimes(times);
+      if (times.length > 0) setSelectedTime(times[0]);
+    }
     setLoading(false);
   };
 
-  return (
-    <main className="min-h-screen bg-[#F8F9FA] p-4 md:p-10 font-sans">
-      <div className="max-w-6xl mx-auto">
-        
-정말 죄송합니다! grid 클래스가 제대로 적용되지 않고 있거나, 이전 스타일(세로 배열)이 남아있는 것 같습니다.
-
-이번에는 Tailwind CSS에 의존하지 않고, 강제로 **"무조건 가로 2칸(바둑판)"**으로 나오게 만드는 **강력한 스타일(Inline Style)**을 적용했습니다.
-
-이 코드를 붙여넣으시면 절대로 1개씩 나오지 않고, 무조건 2개씩 나옵니다.
-
-🛠 해결된 코드 (강제 2열 배치 적용)
-src/app/page.js에 덮어씌워 주세요.
-
-JavaScript
-
-'use client';
-
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
-
-export default function Home() {
-  const router = useRouter();
-  
-  const [universities, setUniversities] = useState([]);
-  const [selectedUni, setSelectedUni] = useState(null);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // 1. 학교 목록 가져오기
-  useEffect(() => {
-    const fetchUniversities = async () => {
-      const { data, error } = await supabase.from('exam_results').select('university');
-      if (!error) {
-        const uniqueUnis = [...new Set(data.map(item => item.university))];
-        setUniversities(uniqueUnis);
-      }
-      setLoading(false);
-    };
-    fetchUniversities();
-  }, []);
-
-  // 2. 학교 선택 핸들러
-  const handleSelectUni = async (uniName) => {
-    setLoading(true);
-    setSelectedUni(uniName);
-    const { data } = await supabase
-      .from('exam_results')
-      .select('*')
-      .eq('university', uniName)
-      .order('year', { ascending: false })
-      .order('exam_time', { ascending: true });
-    setResults(data || []);
-    setLoading(false);
+  const handleScoreChange = (e) => {
+    let val = e.target.value;
+    if (Number(val) > 100) val = '100';
+    setMyScore(val);
   };
+
+  const filteredResults = results.filter(item => 
+    selectedTime === '전체' ? true : item.exam_time === selectedTime
+  );
 
   return (
     <main className="min-h-screen bg-[#F2F4F6] p-5 md:p-10 font-sans tracking-tight text-[#191F28]">
-      <div className="max-w-xl mx-auto pt-4">
+      <div className="max-w-5xl mx-auto pt-4">
         
         {/* === 화면 1: 학교 선택 모드 === */}
         {!selectedUni && (
@@ -110,7 +75,7 @@ export default function Home() {
                 목표 대학 선택
               </h1>
               <p className="text-[#8B95A1] text-[15px]">
-                합격 컷 및 분석 데이터
+                학교별/시간별 합격 분석
               </p>
             </div>
 
@@ -119,7 +84,6 @@ export default function Home() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3182F6]"></div>
               </div>
             ) : (
-              // ✨ [핵심 수정] style 속성으로 강제 2열 그리드 적용 ✨
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                 {universities.map((uni) => (
                   <div 
@@ -129,7 +93,6 @@ export default function Home() {
                                shadow-sm active:scale-95 transition-all duration-200 
                                flex flex-col items-center justify-center h-[140px] border border-transparent hover:border-blue-100"
                   >
-                    {/* 로고 박스 (크기 고정) */}
                     <div className="w-[50px] h-[50px] mb-3 flex items-center justify-center">
                       <img 
                         src={`/logos/${uni}.png`} 
@@ -141,8 +104,6 @@ export default function Home() {
                         }}
                       />
                     </div>
-                    
-                    {/* 학교 이름 */}
                     <span className="text-[16px] font-bold text-[#333D4B] text-center leading-tight">
                       {uni}
                     </span>
@@ -152,104 +113,172 @@ export default function Home() {
             )}
           </div>
         )}
-        
-        {/* === 화면 2: 리스트 모드 (박스 디자인 제거됨) === */}
+
+        {/* === 화면 2: 결과 리스트 모드 === */}
         {selectedUni && (
           <div className="animate-fade-in-up">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => { setSelectedUni(null); setResults([]); }}
-                  className="bg-white p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm text-gray-500"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                  </svg>
-                </button>
+            
+            {/* 1. 상단 컨트롤 패널 */}
+            <div className="sticky top-0 z-20 bg-[#F2F4F6]/95 backdrop-blur-md pb-4 pt-2 -mx-5 px-5 mb-2 space-y-3">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 bg-white p-4 rounded-[24px] shadow-sm border border-blue-50">
                 <div className="flex items-center gap-3">
-                   <img src={`/logos/${selectedUni}.png`} alt="logo" className="w-10 h-10 object-contain" 
-                        onError={(e) => e.target.src = "https://cdn-icons-png.flaticon.com/512/807/807262.png"}/>
-                   <div>
-                     <h1 className="text-2xl font-bold text-gray-900">{selectedUni}</h1>
-                     <p className="text-xs text-gray-500">총 {results.length}개의 데이터가 있습니다</p>
-                   </div>
+                  <button 
+                    onClick={() => { setSelectedUni(null); setResults([]); }}
+                    className="bg-[#F2F4F6] p-2 rounded-full hover:bg-gray-200 transition-colors flex-shrink-0"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#333D4B" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+                  <div className="flex items-center gap-2 overflow-hidden">
+                     <img src={`/logos/${selectedUni}.png`} alt="logo" className="w-10 h-10 object-contain bg-white rounded-[10px] p-1 border border-gray-100 flex-shrink-0" 
+                          onError={(e) => e.target.src = "https://cdn-icons-png.flaticon.com/512/807/807262.png"}/>
+                     <h1 className="text-[18px] font-bold text-[#191F28] whitespace-nowrap">{selectedUni}</h1>
+                  </div>
                 </div>
+
+                <div className="flex items-center gap-2 bg-[#F9FAFB] px-3 py-1.5 rounded-[16px] border border-gray-200 self-end md:self-auto w-full md:w-auto justify-end">
+                  <span className="text-[14px] font-bold text-[#333D4B] whitespace-nowrap">✍️ 내 점수:</span>
+                  <input 
+                    type="number" 
+                    value={myScore}
+                    onChange={handleScoreChange}
+                    placeholder="0"
+                    className="bg-transparent text-[18px] font-bold text-[#3182F6] w-[50px] text-center focus:outline-none placeholder-gray-300"
+                  />
+                  <span className="text-[13px] font-medium text-[#8B95A1]">점</span>
+                </div>
+              </div>
+
+              {/* 시간 선택 탭 */}
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <button
+                  onClick={() => setSelectedTime('전체')}
+                  className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all
+                    ${selectedTime === '전체' 
+                      ? 'bg-[#333D4B] text-white shadow-md' 
+                      : 'bg-white text-[#8B95A1] border border-gray-200 hover:bg-gray-50'}`}
+                >
+                  전체 보기
+                </button>
+                {examTimes.map((time) => (
+                  <button
+                    key={time}
+                    onClick={() => setSelectedTime(time)}
+                    className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all
+                      ${selectedTime === time 
+                        ? 'bg-[#3182F6] text-white shadow-md' 
+                        : 'bg-white text-[#59606a] border border-gray-200 hover:bg-gray-50'}`}
+                  >
+                    {time}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+            {/* 2. 데이터 표 */}
+            <div className="bg-white rounded-[24px] shadow-sm overflow-hidden border border-gray-100">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50/50 text-gray-500 font-medium border-b border-gray-100">
-                    <tr>
-                      <th className="px-6 py-5 text-center w-20">연도</th>
-                      <th className="px-6 py-5 text-center w-24">시험시간</th>
-                      <th className="px-6 py-5 pl-8">모집단위 (학과)</th>
-                      <th className="px-6 py-5 text-center">경쟁률</th>
-                      <th className="px-6 py-5 text-center">평균점수</th>
-                      <th className="px-6 py-5 text-center">커트라인</th>
-                      <th className="px-6 py-5 text-center">상태</th>
+                <table className="w-full text-left border-collapse whitespace-nowrap">
+                  <thead>
+                    <tr className="bg-[#F9FAFB] border-b border-gray-100 text-[13px] text-[#8B95A1]">
+                      <th className="py-4 pl-6 font-medium text-center w-[60px]">시간</th>
+                      <th className="py-4 px-2 font-medium">모집단위 (학과)</th>
+                      <th className="py-4 px-2 font-medium text-center w-[50px]">예비</th>
+                      <th className="py-4 px-2 text-center font-medium w-[60px]">경쟁률</th>
+                      <th className="py-4 px-2 text-center font-medium w-[60px]">평균</th>
+                      <th className="py-4 px-2 text-center font-medium w-[60px]">컷</th>
+                      <th className="py-4 pr-6 text-center font-medium w-[150px]">분석 결과</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {results.map((item) => (
-                      <tr 
-                        key={item.id} 
-                        onClick={() => router.push(`/result/${item.id}`)}
-                        className="hover:bg-blue-50/30 transition-colors cursor-pointer group"
-                      >
-                        {/* 연도 */}
-                        <td className="px-6 py-5 text-center text-gray-500">
-                            {item.year}
-                        </td>
+                  <tbody className="text-[15px]">
+                    {filteredResults.length > 0 ? (
+                      filteredResults.map((item) => {
+                        const cut = item.cut_score || 0;
+                        const avg = item.avg_score || 0;
+                        const score = Number(myScore);
                         
-                        {/* 시험시간 (박스 제거 -> 일반 텍스트) */}
-                        <td className="px-6 py-5 text-center text-gray-500 font-medium">
-                            {item.exam_time || '-'}
-                        </td>
+                        // 뱃지 스타일 로직
+                        let badgeClass = "bg-[#F2F4F6] text-[#B0B8C1]"; // 기본
+                        let badgeText = "입력대기";
                         
-                        {/* 학과 */}
-                        <td className="px-6 py-5 pl-8">
-                          <div className="font-bold text-gray-800 text-base group-hover:text-blue-600 transition-colors">
-                            {item.department}
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-5 text-center text-gray-500">
-                          {item.competition_rate ? `${item.competition_rate}:1` : '-'}
-                        </td>
-                        <td className="px-6 py-5 text-center font-bold text-gray-700">
-                          {item.avg_score || '-'}
-                        </td>
-                        <td className="px-6 py-5 text-center">
-                          {item.cut_score ? (
-                            <span className="text-red-500 font-bold">
-                              {item.cut_score}
-                            </span>
-                          ) : '-'}
-                        </td>
-                        
-                        {/* 상태 (박스 제거 -> 텍스트 링크 스타일) */}
-                         <td className="px-6 py-5 text-center">
-                          <span className="text-blue-600 font-bold hover:underline">
-                            분석 →
-                          </span>
+                        if (myScore !== '') {
+                          if (score >= avg) {
+                            badgeClass = "bg-[#E8F5E9] text-[#2E7D32]"; // 안정 (초록)
+                            badgeText = "✅ 안정권";
+                          } else if (score >= cut) {
+                            badgeClass = "bg-[#FFF8E1] text-[#F9A825]"; // 소신 (노랑)
+                            badgeText = "⚡️ 소신지원";
+                          } else {
+                            badgeClass = "bg-[#FFEBEE] text-[#C62828]"; // 위험 (빨강)
+                            badgeText = "🔥 위험";
+                          }
+                        }
+
+                        // 점수 차이 계산
+                        const diff = (score - cut).toFixed(1);
+                        const diffText = diff > 0 ? `+${diff}` : diff;
+
+                        return (
+                          <tr key={item.id} className="border-b border-gray-50 last:border-0 hover:bg-[#F2F4F6] transition-colors group">
+                            <td className="py-4 pl-6 text-center">
+                              <span className="bg-[#E8F3FF] text-[#3182F6] px-2 py-1 rounded-[6px] text-[12px] font-bold">
+                                {item.exam_time || '-'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-2">
+                              <span className="font-bold text-[#191F28] text-[16px]">{item.department}</span>
+                            </td>
+                            <td className="py-4 px-2 text-center font-medium text-[#4E5968]">{item.reserve_rank || '-'}</td>
+                            <td className="py-4 px-2 text-center text-[#8B95A1] text-[14px]">{item.competition_rate || '-'}</td>
+                            <td className="py-4 px-2 text-center font-bold text-[#3182F6]">{item.avg_score || '-'}</td>
+                            <td className="py-4 px-2 text-center font-bold text-[#F04452]">{item.cut_score || '-'}</td>
+
+                            {/* === 상태 뱃지 및 그래프 === */}
+                            <td className="py-4 pr-6 align-middle">
+                              {myScore === '' ? (
+                                <div className="text-center text-[12px] text-[#B0B8C1] bg-gray-50 py-1.5 px-3 rounded-full border border-gray-100">
+                                  점수를 입력하세요
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-end gap-1">
+                                  {/* 1. 디자인된 뱃지 */}
+                                  <div className={`px-2.5 py-1 rounded-[6px] text-[12px] font-bold flex items-center gap-1 ${badgeClass}`}>
+                                    {badgeText}
+                                  </div>
+                                  
+                                  {/* 2. 점수 차이 및 미니 바 */}
+                                  <div className="flex items-center gap-2 w-full justify-end mt-1">
+                                     <span className={`text-[11px] font-medium ${diff > 0 ? 'text-[#2E7D32]' : 'text-[#C62828]'}`}>
+                                       (컷 {diffText})
+                                     </span>
+                                     {/* 미니 바 그래프 (배경) */}
+                                     <div className="w-[60px] h-1.5 bg-gray-200 rounded-full overflow-hidden relative">
+                                        <div 
+                                          className={`absolute top-0 left-0 h-full transition-all duration-500 rounded-full ${score >= cut ? 'bg-[#3182F6]' : 'bg-[#F04452]'}`}
+                                          style={{ width: `${Math.min((score / (avg + 10)) * 100, 100)}%` }} // 평균보다 좀 더 높게 잡아서 시각화
+                                        ></div>
+                                     </div>
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="py-20 text-center text-[#8B95A1]">
+                          해당 시간의 시험 데이터가 없습니다.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
-              {results.length === 0 && (
-                <div className="p-16 text-center">
-                   <div className="text-4xl mb-4">📭</div>
-                   <p className="text-gray-400">등록된 데이터가 없습니다.</p>
-                </div>
-              )}
             </div>
           </div>
         )}
-
       </div>
     </main>
   );
