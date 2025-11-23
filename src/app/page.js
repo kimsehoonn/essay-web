@@ -9,12 +9,13 @@ export default function Home() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 추가된 상태: 시험 시간 목록 & 선택된 시간
   const [examTimes, setExamTimes] = useState([]);
-  const [selectedTime, setSelectedTime] = useState(null);
+  const [selectedTime, setSelectedTime] = useState('전체'); // 기본값 '전체'
 
-  // 전역 내 점수
   const [myScore, setMyScore] = useState('');
+
+  // 점수 입력 가능 여부 체크 (전체가 아니고, 특정 시간이 선택되었을 때만 true)
+  const isScoreEnabled = selectedTime !== '전체' && selectedTime !== null;
 
   useEffect(() => {
     const fetchUniversities = async () => {
@@ -32,7 +33,7 @@ export default function Home() {
     setLoading(true);
     setSelectedUni(uniName);
     setMyScore(''); 
-    setSelectedTime(null);
+    setSelectedTime('전체'); // 학교 바뀌면 '전체'로 초기화 (입력 잠금 상태)
     
     const { data } = await supabase
       .from('exam_results')
@@ -45,7 +46,6 @@ export default function Home() {
       setResults(data);
       const times = [...new Set(data.map(item => item.exam_time).filter(t => t))];
       setExamTimes(times);
-      if (times.length > 0) setSelectedTime(times[0]);
     }
     setLoading(false);
   };
@@ -75,7 +75,7 @@ export default function Home() {
                 목표 대학 선택
               </h1>
               <p className="text-[#8B95A1] text-[15px]">
-                학교별/시간별 합격 분석
+                합격 컷 및 분석 데이터
               </p>
             </div>
 
@@ -119,7 +119,9 @@ export default function Home() {
           <div className="animate-fade-in-up">
             
             {/* 1. 상단 컨트롤 패널 */}
-            <div className="sticky top-0 z-20 bg-[#F2F4F6]/95 backdrop-blur-md pb-4 pt-2 -mx-5 px-5 mb-2 space-y-3">
+            <div className="sticky top-0 z-20 bg-[#F2F4F6]/95 backdrop-blur-md pb-4 pt-2 -mx-5 px-5 mb-2 space-y-4">
+              
+              {/* 1-1. 학교 정보 & 점수 입력 (조건부 스타일 적용) */}
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 bg-white p-4 rounded-[24px] shadow-sm border border-blue-50">
                 <div className="flex items-center gap-3">
                   <button 
@@ -137,43 +139,66 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 bg-[#F9FAFB] px-3 py-1.5 rounded-[16px] border border-gray-200 self-end md:self-auto w-full md:w-auto justify-end">
-                  <span className="text-[14px] font-bold text-[#333D4B] whitespace-nowrap">✍️ 내 점수:</span>
+                {/* 점수 입력창 (활성/비활성 로직 적용) */}
+                <div 
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-[16px] border transition-colors w-full md:w-auto justify-end
+                    ${isScoreEnabled 
+                      ? 'bg-[#F9FAFB] border-gray-200' // 활성 상태 (흰색 배경)
+                      : 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60' // 비활성 상태 (회색 배경 + 투명도)
+                    }`}
+                >
+                  <span className={`text-[14px] font-bold whitespace-nowrap ${isScoreEnabled ? 'text-[#333D4B]' : 'text-gray-400'}`}>
+                    {isScoreEnabled ? '✍️ 내 점수:' : '🔒 시간선택필요'}
+                  </span>
                   <input 
                     type="number" 
                     value={myScore}
                     onChange={handleScoreChange}
-                    placeholder="0"
-                    className="bg-transparent text-[18px] font-bold text-[#3182F6] w-[50px] text-center focus:outline-none placeholder-gray-300"
+                    disabled={!isScoreEnabled} // 여기서 입력 막음!
+                    placeholder={isScoreEnabled ? "0" : "-"}
+                    className={`bg-transparent text-[18px] font-bold w-[50px] text-center focus:outline-none
+                      ${isScoreEnabled ? 'text-[#3182F6] placeholder-gray-300' : 'text-gray-400 cursor-not-allowed'}`}
                   />
-                  <span className="text-[13px] font-medium text-[#8B95A1]">점</span>
+                  {isScoreEnabled && <span className="text-[13px] font-medium text-[#8B95A1]">점</span>}
                 </div>
               </div>
 
-              {/* 시간 선택 탭 */}
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                <button
-                  onClick={() => setSelectedTime('전체')}
-                  className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all
-                    ${selectedTime === '전체' 
-                      ? 'bg-[#333D4B] text-white shadow-md' 
-                      : 'bg-white text-[#8B95A1] border border-gray-200 hover:bg-gray-50'}`}
-                >
-                  전체 보기
-                </button>
-                {examTimes.map((time) => (
+              {/* 1-2. 시험 시간 선택 탭 (안내 문구 추가) */}
+              <div>
+                <div className="flex justify-between items-end mb-2 ml-1 px-1">
+                  <h3 className="text-[13px] font-bold text-[#6B7684]">시험 시간을 선택하세요</h3>
+                  {!isScoreEnabled && <span className="text-[11px] text-[#F04452] animate-pulse">👈 시간을 선택해야 입력 가능해요!</span>}
+                </div>
+                
+                {/* 탭 컨테이너 */}
+                <div className="bg-[#E5E8EB] p-1 rounded-[16px] flex gap-1 overflow-x-auto scrollbar-hide">
                   <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
-                    className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all
-                      ${selectedTime === time 
-                        ? 'bg-[#3182F6] text-white shadow-md' 
-                        : 'bg-white text-[#59606a] border border-gray-200 hover:bg-gray-50'}`}
+                    onClick={() => { setSelectedTime('전체'); setMyScore(''); }} // 전체 선택 시 점수 초기화
+                    className={`flex-1 min-w-[70px] py-2.5 rounded-[12px] text-[14px] font-bold transition-all duration-200 text-center whitespace-nowrap
+                      ${selectedTime === '전체' 
+                        ? 'bg-white text-[#333D4B] shadow-sm' 
+                        : 'text-[#8B95A1] hover:text-[#6B7684]'
+                      }`}
                   >
-                    {time}
+                    전체
                   </button>
-                ))}
+
+                  {examTimes.map((time) => (
+                    <button
+                      key={time}
+                      onClick={() => setSelectedTime(time)}
+                      className={`flex-1 min-w-[70px] py-2.5 rounded-[12px] text-[14px] font-bold transition-all duration-200 text-center whitespace-nowrap
+                        ${selectedTime === time 
+                          ? 'bg-white text-[#3182F6] shadow-sm ring-2 ring-blue-100' // 선택됨 강조
+                          : 'text-[#8B95A1] hover:text-[#6B7684]'
+                        }`}
+                    >
+                      {time}
+                    </button>
+                  ))}
+                </div>
               </div>
+
             </div>
 
             {/* 2. 데이터 표 */}
@@ -198,31 +223,26 @@ export default function Home() {
                         const avg = item.avg_score || 0;
                         const score = Number(myScore);
                         
-                        // 뱃지 스타일 로직
-                        let badgeClass = "bg-[#F2F4F6] text-[#B0B8C1]"; // 기본
+                        let badgeClass = "bg-[#F2F4F6] text-[#B0B8C1]";
                         let badgeText = "입력대기";
                         
                         if (myScore !== '') {
                           if (score >= avg) {
-                            badgeClass = "bg-[#E8F5E9] text-[#2E7D32]"; // 안정 (초록)
-                            badgeText = "✅ 안정권";
+                            badgeClass = "bg-[#E8F5E9] text-[#2E7D32]"; badgeText = "✅ 안정권";
                           } else if (score >= cut) {
-                            badgeClass = "bg-[#FFF8E1] text-[#F9A825]"; // 소신 (노랑)
-                            badgeText = "⚡️ 소신지원";
+                            badgeClass = "bg-[#FFF8E1] text-[#F9A825]"; badgeText = "⚡️ 소신지원";
                           } else {
-                            badgeClass = "bg-[#FFEBEE] text-[#C62828]"; // 위험 (빨강)
-                            badgeText = "🔥 위험";
+                            badgeClass = "bg-[#FFEBEE] text-[#C62828]"; badgeText = "🔥 위험";
                           }
                         }
 
-                        // 점수 차이 계산
                         const diff = (score - cut).toFixed(1);
                         const diffText = diff > 0 ? `+${diff}` : diff;
 
                         return (
                           <tr key={item.id} className="border-b border-gray-50 last:border-0 hover:bg-[#F2F4F6] transition-colors group">
                             <td className="py-4 pl-6 text-center">
-                              <span className="bg-[#E8F3FF] text-[#3182F6] px-2 py-1 rounded-[6px] text-[12px] font-bold">
+                              <span className={`px-2 py-1 rounded-[6px] text-[12px] font-bold ${selectedTime === item.exam_time ? 'bg-[#E8F3FF] text-[#3182F6]' : 'bg-gray-100 text-gray-500'}`}>
                                 {item.exam_time || '-'}
                               </span>
                             </td>
@@ -234,29 +254,28 @@ export default function Home() {
                             <td className="py-4 px-2 text-center font-bold text-[#3182F6]">{item.avg_score || '-'}</td>
                             <td className="py-4 px-2 text-center font-bold text-[#F04452]">{item.cut_score || '-'}</td>
 
-                            {/* === 상태 뱃지 및 그래프 === */}
                             <td className="py-4 pr-6 align-middle">
-                              {myScore === '' ? (
-                                <div className="text-center text-[12px] text-[#B0B8C1] bg-gray-50 py-1.5 px-3 rounded-full border border-gray-100">
+                              {!isScoreEnabled ? (
+                                <div className="text-center text-[11px] text-[#B0B8C1] bg-gray-50 py-1.5 px-3 rounded-full border border-gray-100">
+                                  시간 선택 필요
+                                </div>
+                              ) : myScore === '' ? (
+                                <div className="text-center text-[11px] text-[#3182F6] bg-blue-50 py-1.5 px-3 rounded-full border border-blue-100 animate-pulse">
                                   점수를 입력하세요
                                 </div>
                               ) : (
                                 <div className="flex flex-col items-end gap-1">
-                                  {/* 1. 디자인된 뱃지 */}
                                   <div className={`px-2.5 py-1 rounded-[6px] text-[12px] font-bold flex items-center gap-1 ${badgeClass}`}>
                                     {badgeText}
                                   </div>
-                                  
-                                  {/* 2. 점수 차이 및 미니 바 */}
                                   <div className="flex items-center gap-2 w-full justify-end mt-1">
                                      <span className={`text-[11px] font-medium ${diff > 0 ? 'text-[#2E7D32]' : 'text-[#C62828]'}`}>
                                        (컷 {diffText})
                                      </span>
-                                     {/* 미니 바 그래프 (배경) */}
                                      <div className="w-[60px] h-1.5 bg-gray-200 rounded-full overflow-hidden relative">
                                         <div 
                                           className={`absolute top-0 left-0 h-full transition-all duration-500 rounded-full ${score >= cut ? 'bg-[#3182F6]' : 'bg-[#F04452]'}`}
-                                          style={{ width: `${Math.min((score / (avg + 10)) * 100, 100)}%` }} // 평균보다 좀 더 높게 잡아서 시각화
+                                          style={{ width: `${Math.min((score / (avg + 10)) * 100, 100)}%` }}
                                         ></div>
                                      </div>
                                   </div>
@@ -283,4 +302,3 @@ export default function Home() {
     </main>
   );
 }
-//
