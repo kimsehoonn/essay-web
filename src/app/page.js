@@ -83,7 +83,7 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-[#F9FAFB] font-sans text-[#191F28]">
-      <div className="max-w-[600px] mx-auto min-h-screen bg-white shadow-[0_0_40px_rgba(0,0,0,0.02)]">
+      <div className="max-w-[600px] mx-auto min-h-screen bg-[#F9FAFB]"> {/* 배경색 통일 */}
         
         {/* === 화면 1: 학교 선택 모드 === */}
         {!selectedUni && (
@@ -111,17 +111,16 @@ function HomeContent() {
                     key={uni}
                     onClick={() => handleSelectUni(uni)}
                     className="group bg-white rounded-[24px] p-5 cursor-pointer 
-                               border border-[#E5E8EB] hover:border-[#3182F6] hover:shadow-lg hover:shadow-blue-500/5 
-                               active:scale-[0.98] transition-all duration-200 
-                               flex items-center gap-7" 
-                               /* ✨ 수정됨: gap-5 -> gap-7 (간격 확보) */
+                               shadow-sm hover:shadow-lg transition-all duration-200 
+                               flex items-center gap-7 border border-transparent" 
+                               /* ✨ gap-7 적용: 로고랑 글자 사이 넓어짐 */
                   >
                     {/* 로고 박스 */}
                     <div className="w-[68px] h-[68px] bg-[#F9FAFB] rounded-[20px] flex items-center justify-center flex-shrink-0 border border-[#F2F4F6]">
                       <img 
                         src={`/logos/${uni}.png`} 
                         alt={uni}
-                        className="w-10 h-10 object-contain"
+                        className="w-[40px] h-[40px] object-contain"
                         onError={(e) => {
                           e.target.onerror = null; 
                           e.target.src = "https://cdn-icons-png.flaticon.com/512/807/807262.png"; 
@@ -150,44 +149,40 @@ function HomeContent() {
         {selectedUni && (
           <div className="animate-fade-in-up pb-20">
             
-            {/* 1. 상단 헤더 & 컨트롤 (Sticky) */}
-            <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-lg border-b border-[#F2F4F6]">
-              <div className="p-5 pb-6">
+            {/* 1. 상단 헤더 & 컨트롤 */}
+            <div className="sticky top-0 z-30 bg-[#F9FAFB]/95 backdrop-blur-lg pb-2">
+              <div className="p-5">
                 
-                {/* 네비게이션 */}
                 <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <button 
                       onClick={handleBack}
-                      className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+                      className="p-2 -ml-2 rounded-full hover:bg-gray-200 transition-colors"
                     >
-                      <ChevronLeft className="w-6 h-6 text-[#333D4B]" />
+                      <ChevronLeft className="w-7 h-7 text-[#333D4B]" />
                     </button>
-                    <div className="flex items-center gap-3">
-                       <div className="w-[42px] h-[42px] bg-white rounded-[14px] border border-[#E5E8EB] flex items-center justify-center overflow-hidden shadow-sm">
-                         <img 
-                            src={`/logos/${selectedUni}.png`} 
-                            alt="logo" 
-                            className="w-full h-full object-contain p-1"
-                            onError={(e) => e.target.src = "https://cdn-icons-png.flaticon.com/512/807/807262.png"}
-                         />
-                       </div>
-                       <h1 className="text-[22px] font-bold text-[#191F28]">{selectedUni}</h1>
-                    </div>
+                    {/* ✨ 로고 삭제됨, 텍스트만 크게 남김 ✨ */}
+                    <h1 className="text-[26px] font-bold text-[#191F28] tracking-tight">{selectedUni}</h1>
                   </div>
+                  
+                  <span className="text-[13px] font-medium text-[#8B95A1] bg-white px-3 py-1 rounded-full shadow-sm border border-[#F2F4F6]">
+                    총 {results.length}학과
+                  </span>
                 </div>
 
-                {/* 컨트롤 패널 */}
-                <div className="space-y-5">
-                  {/* 시간 선택 */}
+                {/* 컨트롤 패널 (하얀색 카드) */}
+                <div className="bg-white rounded-[24px] p-5 shadow-md border border-[#F2F4F6] space-y-6">
+                  
+                  {/* 1. 시험 시간 선택 */}
                   <div>
-                    <h3 className="text-[13px] font-bold text-[#8B95A1] mb-2.5 ml-1">1. 시험 시간 선택</h3>
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5">
+                    <h3 className="text-[13px] font-bold text-[#8B95A1] mb-3 ml-1">1. 시험 시간 선택</h3>
+                    {/* ✨ gap-3 적용: 버튼 사이 간격 넓어짐 ✨ */}
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                       <button
                         onClick={() => { setSelectedTime('전체'); setMyScore(''); }}
-                        className={`flex-shrink-0 px-5 py-2.5 rounded-[16px] text-[15px] font-bold transition-all border
+                        className={`flex-shrink-0 px-5 py-2.5 rounded-[16px] text-[15px] font-bold transition-all border shadow-sm
                           ${selectedTime === '전체' 
-                            ? 'bg-[#333D4B] text-white border-[#333D4B] shadow-md' 
+                            ? 'bg-[#333D4B] text-white border-[#333D4B]' 
                             : 'bg-white text-[#6B7684] border-[#E5E8EB] hover:bg-gray-50'
                           }`}
                       >
@@ -197,9 +192,9 @@ function HomeContent() {
                         <button
                           key={time}
                           onClick={() => setSelectedTime(time)}
-                          className={`flex-shrink-0 px-5 py-2.5 rounded-[16px] text-[15px] font-bold transition-all border
+                          className={`flex-shrink-0 px-5 py-2.5 rounded-[16px] text-[15px] font-bold transition-all border shadow-sm
                             ${selectedTime === time 
-                              ? 'bg-[#3182F6] text-white border-[#3182F6] shadow-md' 
+                              ? 'bg-[#3182F6] text-white border-[#3182F6]' 
                               : 'bg-white text-[#6B7684] border-[#E5E8EB] hover:bg-gray-50'
                             }`}
                         >
@@ -209,10 +204,9 @@ function HomeContent() {
                     </div>
                   </div>
 
-                  {/* ✨ 수정됨: 명암 그라데이션 구분선 (Divider) ✨ */}
-                  <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-70 my-2"></div>
+                  <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-70"></div>
 
-                  {/* 점수 입력 */}
+                  {/* 2. 점수 입력 */}
                   <div>
                     <div className="flex justify-between items-end mb-2 ml-1">
                       <h3 className={`text-[13px] font-bold transition-colors ${isScoreEnabled ? 'text-[#3182F6]' : 'text-[#8B95A1]'}`}>
@@ -251,10 +245,9 @@ function HomeContent() {
             </div>
 
             {/* 2. 데이터 리스트 */}
-            <div className="px-5 pt-6">
-              <div className="mb-3 flex justify-between items-end px-1">
-                <span className="text-[14px] font-bold text-[#333D4B]">분석 결과</span>
-                <span className="text-[12px] text-[#8B95A1]">총 {filteredResults.length}개 학과</span>
+            <div className="px-5 pt-2">
+              <div className="mb-4 flex justify-between items-end px-1">
+                <span className="text-[15px] font-bold text-[#333D4B]">분석 결과</span>
               </div>
 
               {resultsLoading ? (
@@ -262,7 +255,8 @@ function HomeContent() {
                     <div className="animate-spin rounded-full h-8 w-8 border-[3px] border-t-transparent border-[#3182F6] mx-auto"></div>
                  </div>
               ) : (
-                <div className="space-y-4">
+                // ✨ space-y-5: 카드 간격 넓힘 ✨
+                <div className="space-y-5">
                   {filteredResults.length > 0 ? (
                     filteredResults.map((item) => {
                       const cut = item.cut_score || 0;
@@ -293,7 +287,8 @@ function HomeContent() {
                       const diffText = diff > 0 ? `+${diff}` : diff;
 
                       return (
-                        <div key={item.id} className="bg-white rounded-[24px] p-6 border border-[#F2F4F6] shadow-sm hover:shadow-md transition-shadow">
+                        // ✨ 그림자(shadow-md)와 테두리 강화로 카드 구분감 UP ✨
+                        <div key={item.id} className="bg-white rounded-[24px] p-6 shadow-md border border-transparent hover:border-[#3182F6] transition-all">
                           
                           <div className="flex justify-between items-start mb-5">
                             <div>
@@ -307,7 +302,7 @@ function HomeContent() {
                                   {item.exam_time || '-'}
                                 </span>
                               </div>
-                              <h3 className="text-[18px] font-bold text-[#191F28] leading-tight">{item.department}</h3>
+                              <h3 className="text-[19px] font-bold text-[#191F28] leading-tight">{item.department}</h3>
                             </div>
                             
                             {myScore !== '' ? (
