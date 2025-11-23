@@ -1,22 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react'; // Suspense 추가
 import { supabase } from '@/lib/supabase';
+import { useRouter, useSearchParams } from 'next/navigation'; // useSearchParams 추가
 
-export default function Home() {
+// 메인 로직 컴포넌트
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // URL에서 학교 이름 가져오기 (없으면 null)
+  const selectedUni = searchParams.get('uni');
+
   const [universities, setUniversities] = useState([]);
-  const [selectedUni, setSelectedUni] = useState(null);
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // 초기 로딩
+  const [resultsLoading, setResultsLoading] = useState(false); // 결과 로딩
 
   const [examTimes, setExamTimes] = useState([]);
   const [selectedTime, setSelectedTime] = useState('전체'); 
-
   const [myScore, setMyScore] = useState('');
 
-  // 점수 입력 가능 여부
   const isScoreEnabled = selectedTime !== '전체' && selectedTime !== null;
 
+  // 1. 학교 목록 가져오기 (최초 1회)
   useEffect(() => {
     const fetchUniversities = async () => {
       const { data, error } = await supabase.from('exam_results').select('university');
@@ -29,25 +36,46 @@ export default function Home() {
     fetchUniversities();
   }, []);
 
-  const handleSelectUni = async (uniName) => {
-    setLoading(true);
-    setSelectedUni(uniName);
-    setMyScore(''); 
-    setSelectedTime('전체');
-    
-    const { data } = await supabase
-      .from('exam_results')
-      .select('*')
-      .eq('university', uniName)
-      .order('year', { ascending: false })
-      .order('exam_time', { ascending: true });
-    
-    if (data) {
-      setResults(data);
-      const times = [...new Set(data.map(item => item.exam_time).filter(t => t))];
-      setExamTimes(times);
-    }
-    setLoading(false);
+  // 2. 선택된 학교 데이터 가져오기 (URL의 selectedUni가 바뀔 때마다 실행)
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!selectedUni) {
+        setResults([]); // 학교 선택 안됨 -> 리스트 초기화
+        return;
+      }
+
+      setResultsLoading(true);
+      // 상태 초기화
+      setMyScore('');
+      setSelectedTime('전체');
+
+      const { data } = await supabase
+        .from('exam_results')
+        .select('*')
+        .eq('university', selectedUni)
+        .order('year', { ascending: false })
+        .order('exam_time', { ascending: true });
+      
+      if (data) {
+        setResults(data);
+        const times = [...new Set(data.map(item => item.exam_time).filter(t => t))];
+        setExamTimes(times);
+      }
+      setResultsLoading(false);
+    };
+
+    fetchResults();
+  }, [selectedUni]); // selectedUni가 변경될 때만 실행됨
+
+  // 3. 학교 선택 핸들러 (이제 URL을 변경함)
+  const handleSelectUni = (uniName) => {
+    // URL을 변경하면 위 useEffect가 감지해서 데이터를 불러옴
+    router.push(`/?uni=${uniName}`);
+  };
+
+  // 4. 뒤로가기 핸들러 (UI 버튼용)
+  const handleBack = () => {
+    router.push('/'); // 홈으로 이동
   };
 
   const handleScoreChange = (e) => {
@@ -93,7 +121,6 @@ export default function Home() {
                                shadow-sm active:scale-95 transition-all duration-200 
                                flex flex-col items-center justify-center h-[180px] border border-transparent hover:border-blue-100"
                   >
-                    {/* 1. 로고 박스 (크기 대폭 확대: 50px -> 80px) */}
                     <div className="w-[80px] h-[80px] mb-4 flex items-center justify-center">
                       <img 
                         src={`/logos/${uni}.png`} 
@@ -119,14 +146,14 @@ export default function Home() {
         {selectedUni && (
           <div className="animate-fade-in-up">
             
-            {/* 1. 상단 컨트롤 패널 (순서 변경됨) */}
+            {/* 1. 상단 컨트롤 패널 */}
             <div className="sticky top-0 z-20 bg-[#F2F4F6]/95 backdrop-blur-md pb-4 pt-2 -mx-5 px-5 mb-2 space-y-4">
               
-              {/* 1-1. 학교 정보 (뒤로가기 + 로고 + 이름) */}
+              {/* 1-1. 학교 정보 (뒤로가기 버튼 기능 수정됨) */}
               <div className="flex items-center justify-between bg-white p-4 rounded-[24px] shadow-sm border border-blue-50">
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={() => { setSelectedUni(null); setResults([]); }}
+                    onClick={handleBack} // URL 기반 뒤로가기
                     className="bg-[#F2F4F6] p-2 rounded-full hover:bg-gray-200 transition-colors flex-shrink-0"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="#333D4B" className="w-5 h-5">
@@ -174,7 +201,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 1-3. 점수 입력창 (맨 아래로 이동) */}
+              {/* 1-3. 점수 입력창 */}
               <div>
                 <div className="flex justify-between items-end mb-2 ml-1 px-1">
                   <h3 className={`text-[13px] font-bold transition-colors ${isScoreEnabled ? 'text-[#3182F6]' : 'text-[#6B7684]'}`}>
@@ -182,12 +209,11 @@ export default function Home() {
                   </h3>
                   {!isScoreEnabled && <span className="text-[11px] text-[#F04452] animate-pulse">시간 선택 필요!</span>}
                 </div>
-                
                 <div 
                   className={`flex items-center justify-between px-5 py-3 rounded-[20px] border transition-all duration-300
                     ${isScoreEnabled 
-                      ? 'bg-white border-[#3182F6] shadow-md ring-4 ring-blue-50' // 활성: 파란 테두리 + 그림자
-                      : 'bg-gray-100 border-gray-200 opacity-60' // 비활성
+                      ? 'bg-white border-[#3182F6] shadow-md ring-4 ring-blue-50' 
+                      : 'bg-gray-100 border-gray-200 opacity-60'
                     }`}
                 >
                   <span className={`text-[15px] font-bold ${isScoreEnabled ? 'text-[#333D4B]' : 'text-gray-400'}`}>
@@ -207,11 +233,15 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-
             </div>
 
             {/* 2. 데이터 표 */}
             <div className="bg-white rounded-[24px] shadow-sm overflow-hidden border border-gray-100 mt-4">
+              {resultsLoading ? (
+                 <div className="py-20 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3182F6] mx-auto"></div>
+                 </div>
+              ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
@@ -300,10 +330,20 @@ export default function Home() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           </div>
         )}
       </div>
     </main>
+  );
+}
+
+// Suspense로 감싸서 내보내기 (배포 에러 방지용)
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F2F4F6] p-10 text-center">로딩중...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
