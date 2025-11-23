@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronRight, ChevronLeft } from 'lucide-react'; // ✨ 여기서 아이콘을 가져옵니다!
+import { ChevronLeft, ChevronRight, Check, AlertCircle, Zap } from 'lucide-react';
 
 function HomeContent() {
   const router = useRouter();
@@ -82,44 +82,46 @@ function HomeContent() {
   );
 
   return (
-    <main className="min-h-screen bg-[#F2F4F6] p-5 md:p-10 font-sans tracking-tight text-[#191F28]">
-      <div className="max-w-3xl mx-auto pt-4">
+    <main className="min-h-screen bg-[#F9FAFB] font-sans text-[#191F28]">
+      <div className="max-w-[600px] mx-auto min-h-screen bg-white shadow-[0_0_40px_rgba(0,0,0,0.02)]">
         
         {/* === 화면 1: 학교 선택 모드 === */}
         {!selectedUni && (
-          <div className="animate-fade-in-up">
-            <div className="mb-8 pl-1">
-              <span className="text-[#3182F6] font-bold text-[12px] bg-[#E8F3FF] px-2 py-1 rounded-[6px]">
-                2025학년도
+          <div className="animate-fade-in-up p-6 pt-12">
+            <div className="mb-10">
+              <span className="text-[#3182F6] font-bold text-[13px] bg-[#E8F3FF] px-3 py-1.5 rounded-[8px]">
+                2025학년도 대비
               </span>
-              <h1 className="text-[24px] font-bold text-[#191F28] mt-3 mb-2">
-                목표 대학을<br/>선택해주세요
+              <h1 className="text-[28px] font-bold text-[#191F28] mt-4 mb-3 leading-[1.3]">
+                어떤 대학의<br/>합격 컷이 궁금한가요?
               </h1>
-              <p className="text-[#8B95A1] text-[15px]">
-                기출 분석 및 합격 컷 데이터 제공
+              <p className="text-[#8B95A1] text-[16px]">
+                가장 정확한 기출 분석 데이터를 확인하세요
               </p>
             </div>
 
             {loading ? (
-              <div className="flex justify-center py-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3182F6]"></div>
+              <div className="flex justify-center py-32">
+                <div className="animate-spin rounded-full h-10 w-10 border-[3px] border-t-transparent border-[#3182F6]"></div>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {universities.map((uni) => (
                   <div 
                     key={uni}
                     onClick={() => handleSelectUni(uni)}
-                    className="group bg-white rounded-[20px] p-4 cursor-pointer 
-                               shadow-[0_2px_8px_rgba(0,0,0,0.04)] active:scale-[0.98] transition-all duration-200 
-                               flex items-center gap-5 border border-transparent hover:border-blue-100"
+                    className="group bg-white rounded-[24px] p-5 cursor-pointer 
+                               border border-[#E5E8EB] hover:border-[#3182F6] hover:shadow-lg hover:shadow-blue-500/5 
+                               active:scale-[0.98] transition-all duration-200 
+                               flex items-center gap-7" 
+                               /* ✨ 수정됨: gap-5 -> gap-7 (간격 확보) */
                   >
-                    {/* 로고 박스 (비율 유지) */}
-                    <div className="w-[64px] h-[64px] bg-[#F9FAFB] rounded-[16px] border border-[#E5E8EB] flex items-center justify-center flex-shrink-0 p-2">
+                    {/* 로고 박스 */}
+                    <div className="w-[68px] h-[68px] bg-[#F9FAFB] rounded-[20px] flex items-center justify-center flex-shrink-0 border border-[#F2F4F6]">
                       <img 
                         src={`/logos/${uni}.png`} 
                         alt={uni}
-                        className="w-full h-full object-contain"
+                        className="w-10 h-10 object-contain"
                         onError={(e) => {
                           e.target.onerror = null; 
                           e.target.src = "https://cdn-icons-png.flaticon.com/512/807/807262.png"; 
@@ -127,16 +129,15 @@ function HomeContent() {
                       />
                     </div>
                     
-                    <div className="flex-1">
-                      <h2 className="text-[18px] font-bold text-[#333D4B] group-hover:text-[#3182F6] transition-colors">
+                    <div className="flex-1 py-1">
+                      <h2 className="text-[19px] font-bold text-[#333D4B] group-hover:text-[#3182F6] transition-colors mb-1">
                         {uni}
                       </h2>
-                      <p className="text-[13px] text-[#8B95A1] mt-0.5">
+                      <p className="text-[14px] text-[#8B95A1]">
                         합격 분석 결과 보기
                       </p>
                     </div>
 
-                    {/* ✨ 화살표: SVG 코드 대신 깔끔한 컴포넌트 사용! */}
                     <ChevronRight className="w-5 h-5 text-[#D1D6DB]" />
                   </div>
                 ))}
@@ -145,14 +146,15 @@ function HomeContent() {
           </div>
         )}
 
-{/* === 화면 2: 결과 리스트 모드 === */}
+        {/* === 화면 2: 결과 리스트 모드 === */}
         {selectedUni && (
           <div className="animate-fade-in-up pb-20">
             
-            {/* 1. 상단 헤더 & 컨트롤 */}
+            {/* 1. 상단 헤더 & 컨트롤 (Sticky) */}
             <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-lg border-b border-[#F2F4F6]">
               <div className="p-5 pb-6">
                 
+                {/* 네비게이션 */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <button 
@@ -175,7 +177,9 @@ function HomeContent() {
                   </div>
                 </div>
 
+                {/* 컨트롤 패널 */}
                 <div className="space-y-5">
+                  {/* 시간 선택 */}
                   <div>
                     <h3 className="text-[13px] font-bold text-[#8B95A1] mb-2.5 ml-1">1. 시험 시간 선택</h3>
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5">
@@ -205,6 +209,10 @@ function HomeContent() {
                     </div>
                   </div>
 
+                  {/* ✨ 수정됨: 명암 그라데이션 구분선 (Divider) ✨ */}
+                  <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-70 my-2"></div>
+
+                  {/* 점수 입력 */}
                   <div>
                     <div className="flex justify-between items-end mb-2 ml-1">
                       <h3 className={`text-[13px] font-bold transition-colors ${isScoreEnabled ? 'text-[#3182F6]' : 'text-[#8B95A1]'}`}>
@@ -254,7 +262,7 @@ function HomeContent() {
                     <div className="animate-spin rounded-full h-8 w-8 border-[3px] border-t-transparent border-[#3182F6] mx-auto"></div>
                  </div>
               ) : (
-                <div className="space-y-4"> {/* 카드 간 간격 늘림 */}
+                <div className="space-y-4">
                   {filteredResults.length > 0 ? (
                     filteredResults.map((item) => {
                       const cut = item.cut_score || 0;
@@ -287,25 +295,21 @@ function HomeContent() {
                       return (
                         <div key={item.id} className="bg-white rounded-[24px] p-6 border border-[#F2F4F6] shadow-sm hover:shadow-md transition-shadow">
                           
-                          {/* 상단: 학과명 + 시간뱃지 (여백 및 디자인 수정) */}
                           <div className="flex justify-between items-start mb-5">
                             <div>
-                              {/* ✨ 여기가 수정된 부분: gap-3로 늘리고 구분선 추가 ✨ */}
                               <div className="flex items-center gap-3 mb-2">
                                 <span className="bg-[#F2F4F6] text-[#6B7684] px-2 py-0.5 rounded-[6px] text-[11px] font-bold">
                                   {item.year}
                                 </span>
-                                {/* 얇은 구분선 */}
                                 <div className="w-[1px] h-2.5 bg-gray-200"></div>
                                 <span className={`px-2 py-0.5 rounded-[6px] text-[11px] font-bold 
                                   ${selectedTime === item.exam_time ? 'bg-[#E8F3FF] text-[#3182F6]' : 'bg-[#F9FAFB] text-[#8B95A1]'}`}>
                                   {item.exam_time || '-'}
                                 </span>
                               </div>
-                              <h3 className="text-[19px] font-bold text-[#191F28] leading-tight">{item.department}</h3>
+                              <h3 className="text-[18px] font-bold text-[#191F28] leading-tight">{item.department}</h3>
                             </div>
                             
-                            {/* 상태 뱃지 */}
                             {myScore !== '' ? (
                               <div className="flex flex-col items-end">
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-[12px]" style={{ backgroundColor: statusColor }}>
@@ -323,7 +327,6 @@ function HomeContent() {
                             )}
                           </div>
 
-                          {/* 하단: 데이터 그리드 */}
                           <div className="grid grid-cols-4 gap-4 border-t border-[#F2F4F6] pt-4">
                             <div className="text-center">
                               <div className="text-[11px] text-[#8B95A1] mb-1">예비</div>
@@ -343,7 +346,6 @@ function HomeContent() {
                             </div>
                           </div>
 
-                          {/* 미니 그래프 바 */}
                           {myScore !== '' && (
                             <div className="mt-4 pt-1">
                               <div className="w-full h-2 bg-[#F2F4F6] rounded-full overflow-hidden relative">
